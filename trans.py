@@ -2,6 +2,31 @@ import os
 import re
 import translators as ts
 from listfile import list_md_files
+import sys
+import getopt
+
+mode = 'file'
+debug = ''
+path = os.getcwd()
+try:
+    opts, args = getopt.getopt(sys.argv[1:], 'm:p:d:')
+except getopt.GetoptError :
+    print('error')
+
+for opt, arg in opts:
+    if opt == '-m':
+        mode = arg
+    elif opt == '-p':
+        path = arg
+    elif opt == '-d':
+        # all : debug all info
+        # line : print line and new line
+        # trans : print en an ch
+        # form : debug form
+        # list : debug list
+        debug = arg 
+
+    
 
 def tran_line(en):
     if (len(en) == 0):
@@ -22,9 +47,13 @@ def tran_line(en):
         for elem in ens:
             ch = ch + ts.google(elem,'en','zh')
         return ch
-
-    return ts.google(en,'en','zh')
-
+    while(True) :
+        try:
+            ch = ts.google(en,'en','zh')
+            return '<font color=#00ffff size=3>' + ch + '</font>'
+        except Exception as e:
+            print(en,e)
+    
 def append_oneline(lines,oneline) :
     if (len(oneline) == 0):
         return
@@ -37,6 +66,7 @@ def delenter(file,newfile):
     str_oneline = ''
     newlines = []
     codeline = False
+    formline = False
 
     num = 1
     for line in lines:
@@ -83,6 +113,78 @@ def delenter(file,newfile):
             # newlines.append(str_oneline.replace('\n', ' ') + '\n') 
             str_oneline = line
             continue
+        # 存在| 表示当前行是表格行
+        if(debug == 'form'):
+            print('formline = ' ,formline)
+            print(line_strip)
+        if ('|' in line_strip):
+            formline = True
+            print('into  | form line')
+            if (not len(str_oneline) == 0 ):
+                str_oneline = str_oneline + ' ' + tran_line(str_oneline)
+                append_oneline(newlines, str_oneline)
+
+            str_oneline = ''
+            # 如果当前行是 | :------|形式
+            if(debug == 'form'):print(len(line))
+            if(line.count('|') + line.count(' ') + line.count(':') + line.count('-') + line.count('\n')== len(line)) :
+                append_oneline(newlines,line)
+                continue
+
+            # 把当前行以|分割，然后翻译
+            elems = line.split('|')
+            new = '| '
+            for elem in elems:
+                print(elem,len(elem))
+                newelem = elem.strip()
+                if ( not len(newelem) == 0 ):
+                    
+                    # if(newelem.count('-') == len(newelem))
+                    new  = new + elem + ' ' + tran_line(elem) + ' | '
+                    # new  = new + elem + ' | '
+                    # print(new)
+
+                elif (not len(elem) == 0):
+                    if(not elem == '\n'):
+                        new  = new + elem + ' |'
+
+                if(debug =='form'):print(new)
+            
+            append_oneline(newlines, new)
+            if(debug == 'form'): print('str_oneline',str_oneline)
+            continue
+        elif(formline and line_strip.startswith(':')) :
+            # 处于formline模式，冒号开头表示也是formline
+            print('into : form line')
+            # 把当前行以:分割，然后翻译
+            elems = line.split(':')
+            new = '| '
+            for elem in elems:
+                print(elem,len(elem))
+                newelem = elem.strip()
+                if ( not len(newelem) == 0 ):
+                    
+                    # if(newelem.count('-') == len(newelem))
+                    new  = new + elem + ' ' + tran_line(elem) + ' | '
+                    # new  = new + elem + ' | '
+                    # print(new)
+
+                elif (not len(elem) == 0):
+                    if(not elem == '\n'):
+                        new  = new + elem + ' |'
+
+                print(new)
+            
+            if (not len(str_oneline) == 0):
+                str_oneline = str_oneline + ' ' + tran_line(str_oneline)
+                append_oneline(newlines,str_oneline)
+                str_oneline = ''
+            append_oneline(newlines,new)
+            continue
+        else :
+            formline = False
+            if(debug == 'form'):
+                print('leave form line')
 
         if (len(str_oneline) == 0):
             str_oneline = line
@@ -92,24 +194,27 @@ def delenter(file,newfile):
     with open(newfile,mode='w',encoding='utf-8') as newfile :
         newfile.writelines(newlines)
 
+if (mode == 'dir'):
+    files = list_md_files(path)
+    cwd = path
+    transpath = os.path.join(path,'trans\\')
+    if not os.path.isdir(transpath):
+        os.makedirs(transpath)
 
-files = list_md_files(os.path.join(os.getcwd(),'fuchsia-master-docs'))
-cwd = os.getcwd()
-transpath = os.path.join(cwd,'trans')
-newfiles = list_md_files(transpath)
-i = 0
-for file in files:
-    i = i + 1
-    newfile = file.replace(cwd,transpath)
-    newdir = os.path.split(newfile)
-    if not os.path.isdir(newdir[0]):
-        os.makedirs(newdir[0])
-    if (newfile in newfiles) :
-        print('escape ' + str(file))
-        continue
-    print('processing ' + str(i) + '/' + str(len(files)) + ' ' + str(file))
-   
-    delenter(file,newfile)
-    print('processed ' + str(newfile))
-
-# delenter(r'C:\mwm\error.md',r'C:\mwm\new_error.md')
+    newfiles = list_md_files(transpath)
+    i = 0
+    for file in files:
+        i = i + 1
+        newfile = file.replace(cwd,transpath)
+        newdir = os.path.split(newfile)
+        if not os.path.isdir(newdir[0]):
+            os.makedirs(newdir[0])
+        if (newfile in newfiles) :
+            print('escape ' + str(file))
+            continue
+        print('processing ' + str(i) + '/' + str(len(files)) + ' ' + str(file))
+    
+        delenter(file,newfile)
+        print('processed ' + str(newfile))
+else :
+    delenter(path,path+'new.md')
