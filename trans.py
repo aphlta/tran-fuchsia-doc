@@ -50,7 +50,7 @@ def tran_line(en):
     while(True) :
         try:
             ch = ts.google(en,'en','zh')
-            return '<font color=#00ffff size=3>' + ch + '</font>'
+            return '<font color=#00ffff size=3> ' + ch + ' </font>'
         except Exception as e:
             print(en,e)
     
