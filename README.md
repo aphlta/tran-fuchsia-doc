@@ -9,4 +9,5 @@ translate fuchsia doc with google
 
 ## todo
 1. There are some translation errors, write some code for correction
-2. Upload processed files 
+2. 多线程处理，提高速度。 
+
