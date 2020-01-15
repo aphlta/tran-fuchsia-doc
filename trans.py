@@ -67,7 +67,7 @@ def processTitleLine(line):
     # 2. 英文字段有多少 #，表示是第几级标题，所以中文字段前面也要加上对应的 #
     # 3. 如果英文字段中存在非标题提示符的 ‘#’,这里就会多加#，暂时没有发现这个情况，所以先不处理。
     title = '#################'
-    return title[0:line.count('#')] + ' ' + tran_line(line) + ' ' + line.replace('\n',' ')
+    return title[0:line.count('#')] + ' ' + tran_line(line) + ' ' + line.replace('\n',' ').replace('#','')
     
 def processNormalLine(line):
     # 普通行 或者 列表行都有可能。
