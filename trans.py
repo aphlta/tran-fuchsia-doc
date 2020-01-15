@@ -36,6 +36,9 @@ def tran_line(en):
     # en中的#号也是没有意义的，不需要翻译
     en = en.replace('&', '')
     en = en.replace('#','')
+    en = en.replace('**','')
+    en = en.replace('`','')
+    en = en.replace('"','')                   
     en = en.replace('\n', ' ')
 
     len_en = len(en)
